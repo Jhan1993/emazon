@@ -1,1 +1,1 @@
-# Emazon
+# Emazon by Jhan Paul
