@@ -26,7 +26,7 @@ public class CategoryController {
             Category createdCategory = createCategoryUseCase.createCategory(category);
             return new ResponseEntity<>(createdCategory, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
     }
 }
