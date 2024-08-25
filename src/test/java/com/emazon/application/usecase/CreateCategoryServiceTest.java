@@ -10,8 +10,13 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class CreateCategoryServiceTest {
@@ -22,9 +27,13 @@ class CreateCategoryServiceTest {
     @InjectMocks
     private CreateCategoryService createCategoryService;
 
+    private Validator validator;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        validator = factory.getValidator();
     }
 
     @Test
@@ -52,5 +61,57 @@ class CreateCategoryServiceTest {
         // When & Then
         assertThrows(IllegalArgumentException.class, () -> createCategoryService.createCategory(category));
         verify(categoryRepository, never()).save(any(Category.class));
+    }
+
+    @Test
+    void createCategory_shouldFailValidation_whenNameIsEmpty() {
+        // Given
+        Category category = new Category(null, "", "Valid description");
+
+        // When
+        Set<ConstraintViolation<Category>> violations = validator.validate(category);
+
+        // Then
+        assertFalse(violations.isEmpty());
+        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("name")));
+    }
+
+    @Test
+    void createCategory_shouldFailValidation_whenNameExceedsMaxLength() {
+        // Given
+        Category category = new Category(null, "Este nombre de categoría es demasiado largo y excede los cincuenta caracteres permitidos", "Valid description");
+
+        // When
+        Set<ConstraintViolation<Category>> violations = validator.validate(category);
+
+        // Then
+        assertFalse(violations.isEmpty());
+        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("name")));
+    }
+
+    @Test
+    void createCategory_shouldFailValidation_whenDescriptionIsEmpty() {
+        // Given
+        Category category = new Category(null, "Valid name", "");
+
+        // When
+        Set<ConstraintViolation<Category>> violations = validator.validate(category);
+
+        // Then
+        assertFalse(violations.isEmpty());
+        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("description")));
+    }
+
+    @Test
+    void createCategory_shouldFailValidation_whenDescriptionExceedsMaxLength() {
+        // Given
+        Category category = new Category(null, "Valid name", "Esta descripción de categoría es demasiado larga y excede los noventa caracteres permitidos por las reglas de validación");
+
+        // When
+        Set<ConstraintViolation<Category>> violations = validator.validate(category);
+
+        // Then
+        assertFalse(violations.isEmpty());
+        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("description")));
     }
 }
